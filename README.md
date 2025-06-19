@@ -1,45 +1,87 @@
-📁 Simple File Upload API
+# 🚀 File Upload API with Node.js & PostgreSQL
 
-A beginner-friendly Node.js project to upload and store files.
+<div align="center">
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white" alt="Express">
+  <img src="https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/JWT-Auth-000000?logo=json-web-tokens" alt="JWT">
+</div>
 
-🚀 Get Started
+A secure backend API for handling file uploads with authentication and role-based access control.
 
-Install Node.js (from nodejs.org)
+## ✨ Features
 
-Clone this project
+| Feature | Description |
+|---------|-------------|
+| 🔐 Authentication | JWT-based register/login system |
+| 📁 File Handling | Upload single/multiple files with Multer |
+| 👥 User Roles | User and Admin role differentiation |
+| 🛡️ Security | Password hashing with bcryptjs |
+| 💾 Database | PostgreSQL for data persistence |
 
-bash
-git clone https://github.com/your-username/file-upload-api.git
-cd file-upload-api
-Install dependencies
+## 🛠️ Installation
 
-bash
+# Install dependencies
 npm install
-Start the server
 
-bash
+🌐 API Reference
+Authentication
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+File Operations
+
+POST /api/upload
+
+GET /api/files
+
+## 📁 Project Structure
+
+```
+wisdom-upload-api/
+│
+├── src/
+│   │
+│   ├── config/        » Database configuration
+│   ├── controllers/   » Business logic
+│   ├── middleware/    » Authentication
+│   ├── models/        » Data models
+│   ├── routes/        » API endpoints
+│   ├── app.js         » Express configuration
+│   └── server.js      » Server entry point
+│
+├── uploads/           ▼ File storage
+├── .env.example       ▼ Environment template
+└── package.json       ▼ Dependencies
+```
+
+
+💻 Development
+
+# Run in development mode (with auto-restart)
 npm run dev
-🔧 Basic Setup
-Rename .env.example to .env
 
-Add your database details (PostgreSQL)
+# Run in production mode
+npm start
 
-📤 How to Upload Files
+# Format code
+npm run format
+🤝 Contributing
+Fork the project
 
-Send a POST request to:
+Create your feature branch (git checkout -b feature/AmazingFeature)
 
-text
-http://localhost:3000/upload
-With your file attached!
+Commit your changes (git commit -m 'Add amazing feature')
 
-🌟 Features
+Push to the branch (git push origin feature/AmazingFeature)
 
-Single file upload
+Open a Pull Request
 
-Stores files in an uploads folder
+# Configure environment
+cp .env.example .env
+# Edit .env with your credentials
 
-Simple code for beginners
-
-❓ Need Help?
-
-Open an issue or message me!
+# Start development server
+npm run dev
