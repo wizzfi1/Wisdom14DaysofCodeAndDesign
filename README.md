@@ -68,7 +68,9 @@ npm start
 
 # Format code
 npm run format
-🤝 Contributing
+
+## 🤝 Contributing
+
 Fork the project
 
 Create your feature branch (git checkout -b feature/AmazingFeature)
