@@ -66,6 +66,7 @@ DELETE	/api/jobs/:id	Delete job	Owner only
 
 
 Example Requests
+
 Register User:
 
 curl -X POST http://localhost:3000/api/auth/register \
@@ -91,6 +92,7 @@ curl -X POST http://localhost:3000/api/jobs \
 
 
 Database Schema
+
 Users Table:
 
 CREATE TABLE users (
@@ -121,3 +123,17 @@ src/
 ├── models/        # Database models
 ├── routes/        # API endpoints
 └── server.js      # Application entry point
+
+🔧 Troubleshooting
+
+Common Issues:
+
+Database connection:
+
+psql -U your_db_user -d your_db_name -c "SELECT * FROM users;"
+
+JWT errors:
+
+Verify token in jwt.io
+
+Check secret in .env
