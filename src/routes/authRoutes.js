@@ -1,20 +1,16 @@
-// src/routes/auth.js
 const express = require('express');
 const router = express.Router();
+const { protect, authorize } = require('../middleware/auth'); // Add this line
 const { register, login } = require('../controllers/auth');
-const { protect } = require('../middleware/authMiddleware'); // JWT verification middleware
-const authController = require('../controllers/auth');
+const { validateRegister, validateLogin } = require('../middleware/validation');
+
+// Public routes
+router.post('/register', validateRegister, register);
+router.post('/login', validateLogin, login);
+
+// Protected route example
 router.get('/protected-route', protect, (req, res) => {
-  res.json({
-    success: true,
-    user: req.user, // User data from JWT
-    message: "Accessed protected route"
-  });
+  res.json({ success: true, user: req.user });
 });
 
-
-router.post('/register', register);
-router.post('/login', authController.login);
-
 module.exports = router;
-

@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 exports.register = async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     const { rows } = await pool.query(
       'INSERT INTO users (email, password, role) VALUES ($1, $2, $3) RETURNING *',
