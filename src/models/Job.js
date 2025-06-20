@@ -1,45 +1,46 @@
-const mongoose = require('mongoose');
+const pool = require('../config/db');
 
-const JobSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Please add a title'],
-    trim: true,
-    maxlength: [100, 'Title cannot exceed 100 characters']
-  },
-  description: {
-    type: String,
-    required: [true, 'Please add a description']
-  },
-  salary: {
-    type: Number,
-    required: [true, 'Please add a salary']
-  },
-  requirements: {
-    type: [String],
-    required: true
-  },
-  location: {
-    type: String,
-    enum: ['remote', 'onsite', 'hybrid'],
-    required: true
-  },
-  company: {
-    type: String,
-    required: [true, 'Please add a company name']
-  },
-  employer: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+class Job {
+  static async create({ title, description, salary, company, location, employerId }) {
+    const query = `
+      INSERT INTO jobs (title, description, salary, company, location, employer_id)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `;
+    const values = [title, description, salary, company, location, employerId];
+    const { rows } = await pool.query(query, values);
+    return rows[0];
   }
-}, {
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
 
-module.exports = mongoose.model('Job', JobSchema);
+  static async findAll() {
+    const { rows } = await pool.query('SELECT * FROM jobs');
+    return rows;
+  }
+
+  static async findById(id) {
+    const { rows } = await pool.query('SELECT * FROM jobs WHERE id = $1', [id]);
+    return rows[0];
+  }
+
+  static async update(id, updates) {
+    const setClause = Object.keys(updates)
+      .map((key, i) => `${key} = $${i + 1}`)
+      .join(', ');
+    
+    const query = `
+      UPDATE jobs
+      SET ${setClause}
+      WHERE id = $${Object.keys(updates).length + 1}
+      RETURNING *
+    `;
+    const values = [...Object.values(updates), id];
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+  }
+
+  static async delete(id) {
+    await pool.query('DELETE FROM jobs WHERE id = $1', [id]);
+  }
+}
+
+module.exports = Job;

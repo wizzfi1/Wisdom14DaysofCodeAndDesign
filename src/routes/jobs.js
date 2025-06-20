@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
+
 const {
   getJobs,
-  getJob,
   createJob,
   updateJob,
   deleteJob
@@ -10,20 +10,13 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 
 // Public routes
-router.route('/')
-  .get(getJobs);
-  
-router.route('/:id')
-  .get(getJob);
+router.get('/', getJobs);
 
-// Protected employer-only routes
+// Protected employer routes
 router.use(protect, authorize('employer'));
 
-router.route('/')
-  .post(createJob);
-
-router.route('/:id')
-  .put(updateJob)
-  .delete(deleteJob);
+router.post('/', createJob);
+router.put('/:id', updateJob);
+router.delete('/:id', deleteJob);
 
 module.exports = router;
