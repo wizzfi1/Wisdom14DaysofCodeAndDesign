@@ -1,31 +1,135 @@
 const Joi = require('joi');
 
-// Registration validation schema
-const registerSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(8).required(),
-  role: Joi.string().valid('employer', 'applicant').required()
+// Common schemas
+const emailSchema = Joi.string().email().required().messages({
+  'string.email': 'Please provide a valid email address',
+  'string.empty': 'Email is required'
 });
 
-// Login validation schema
+const passwordSchema = Joi.string()
+  .min(8)
+  .required()
+  .pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])'))
+  .messages({
+    'string.min': 'Password must be at least 8 characters',
+    'string.pattern.base': 'Password must contain uppercase, lowercase, number, and special character'
+  });
+
+// Auth validations
+const registerSchema = Joi.object({
+  name: Joi.string().min(2).max(30).required().messages({
+    'string.empty': 'Name is required',
+    'string.min': 'Name must be at least 2 characters'
+  }),
+  email: emailSchema,
+  password: passwordSchema,
+  role: Joi.string().valid('user', 'admin', 'employer').default('user')
+});
+
 const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
+  email: emailSchema,
   password: Joi.string().required()
 });
 
-// Middleware functions
+// Job validations
+const jobQuerySchema = Joi.object({
+  jobType: Joi.string().valid('full-time', 'part-time', 'contract', 'freelance', 'internship'),
+  location: Joi.string(),
+  minSalary: Joi.number().min(0),
+  maxSalary: Joi.number().min(0),
+  search: Joi.string(),
+  page: Joi.number().min(1).default(1),
+  limit: Joi.number().min(1).max(100).default(10),
+  sortBy: Joi.string().valid('title', 'salary', 'createdAt', 'updatedAt').default('createdAt'),
+  sortOrder: Joi.string().valid('ASC', 'DESC').default('DESC')
+});
+
+const jobCreateSchema = Joi.object({
+  title: Joi.string().min(5).max(100).required(),
+  description: Joi.string().min(20).required(),
+  company: Joi.string().min(2).max(50).required(),
+  location: Joi.string().required(),
+  salary: Joi.number().min(0),
+  jobType: Joi.string().valid('full-time', 'part-time', 'contract', 'freelance', 'internship').required(),
+  requirements: Joi.array().items(Joi.string()).min(1)
+});
+
+// Auth validation middlewares
 exports.validateRegister = (req, res, next) => {
-  const { error } = registerSchema.validate(req.body);
+  const { error, value } = registerSchema.validate(req.body, {
+    abortEarly: false
+  });
+
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({ 
+      success: false,
+      errors: error.details.map(detail => ({
+        field: detail.path[0],
+        message: detail.message
+      }))
+    });
   }
+
+  req.body = value;
   next();
 };
 
 exports.validateLogin = (req, res, next) => {
-  const { error } = loginSchema.validate(req.body);
+  const { error, value } = loginSchema.validate(req.body, {
+    abortEarly: false
+  });
+
   if (error) {
-    return res.status(400).json({ error: error.details[0].message });
+    return res.status(400).json({ 
+      success: false,
+      errors: error.details.map(detail => detail.message)
+    });
   }
+
+  req.body = value;
+  next();
+};
+
+// Job validation middlewares
+exports.validateJobQuery = (req, res, next) => {
+  const { error, value } = jobQuerySchema.validate(req.query, {
+    abortEarly: false
+  });
+
+  if (error) {
+    return res.status(400).json({ 
+      success: false,
+      errors: error.details.map(detail => ({
+        field: detail.path[0],
+        message: detail.message
+      }))
+    });
+  }
+
+  req.query = value;
+  next();
+};
+
+exports.validateJobCreate = (req, res, next) => {
+  console.log('Raw input:', JSON.stringify(req.body, null, 2)); // Log raw input
+  
+  const { error, value } = jobCreateSchema.validate(req.body, {
+    abortEarly: false // Show all errors, not just the first one
+  });
+
+  if (error) {
+    console.log('Full validation errors:', error.details);
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid job data',
+      errors: error.details.map(err => ({
+        field: err.path.join('.'),
+        message: err.message,
+        type: err.type
+      }))
+    });
+  }
+
+  req.body = value;
   next();
 };

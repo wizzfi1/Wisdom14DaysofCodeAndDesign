@@ -1,54 +1,27 @@
-const Job = require('../models/Job');
+const { Job, User } = require('../models');
+const { Op } = require('sequelize');
 
-exports.getJobs = async (req, res) => {
-  try {
-    const jobs = await Job.findAll();
-    res.json(jobs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Implement your controller functions
+const getAllJobs = async (req, res) => {
+  // ... implementation ...
 };
 
-exports.createJob = async (req, res) => {
-  try {
-    const job = await Job.create({
-      ...req.body,
-      employerId: req.user.id
-    });
-    res.status(201).json(job);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+const createJob = async (req, res) => {
+  // ... implementation ...
 };
 
-exports.updateJob = async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id);
-    
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-    if (job.employer_id !== req.user.id) {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
-    const updatedJob = await Job.update(req.params.id, req.body);
-    res.json(updatedJob);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+const updateJob = async (req, res) => {
+  // ... implementation ...
 };
 
-exports.deleteJob = async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id);
-    
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-    if (job.employer_id !== req.user.id) {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
+const deleteJob = async (req, res) => {
+  // ... implementation ...
+};
 
-    await Job.delete(req.params.id);
-    res.status(204).send();
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+// Export the controller functions
+module.exports = {
+  getAllJobs,
+  createJob,
+  updateJob,
+  deleteJob
 };

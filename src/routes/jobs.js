@@ -1,22 +1,29 @@
 const express = require('express');
 const router = express.Router();
-
 const {
-  getJobs,
+  getAllJobs,
   createJob,
   updateJob,
   deleteJob
 } = require('../controllers/jobs');
+
+// Import with consistent naming
 const { protect, authorize } = require('../middleware/auth');
+const { validateJobQuery } = require('../middleware/validation');
 
-// Public routes
-router.get('/', getJobs);
+// Public route (only needs validation)
+router.get(
+  '/',
+  validateJobQuery,
+  getAllJobs
+);
 
-// Protected employer routes
-router.use(protect, authorize('employer'));
+// Protected routes
+router.use(protect); // Applies to all routes below
 
-router.post('/', createJob);
-router.put('/:id', updateJob);
-router.delete('/:id', deleteJob);
+// Employer-only routes
+router.post('/', authorize('employer', 'admin'), createJob);
+router.put('/:id', authorize('employer', 'admin'), updateJob);
+router.delete('/:id', authorize('employer', 'admin'), deleteJob);
 
 module.exports = router;
