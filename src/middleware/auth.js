@@ -74,7 +74,6 @@ exports.authorize = (...roles) => {
   };
 };
 
-// Add this to your existing auth middleware
 exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
