@@ -71,14 +71,18 @@ exports.validateLogin = (req, res, next) => {
 // Job validations
 exports.validateJobQuery = (req, res, next) => {
   const schema = Joi.object({
-    jobType: Joi.string().valid('full-time', 'part-time', 'contract', 'freelance', 'internship'),
+    jobType: Joi.string().valid(
+      'full-time', 'part-time', 'contract', 'freelance', 'internship'
+    ),
     location: Joi.string(),
     minSalary: Joi.number().min(0),
     maxSalary: Joi.number().min(0),
     search: Joi.string(),
     page: Joi.number().min(1).default(1),
     limit: Joi.number().min(1).max(100).default(10),
-    sortBy: Joi.string().valid('title', 'salary', 'createdAt', 'updatedAt').default('createdAt'),
+    sortBy: Joi.string().valid(
+      'title', 'salary', 'createdAt', 'updatedAt'
+    ).default('createdAt'),
     sortOrder: Joi.string().valid('ASC', 'DESC').default('DESC')
   });
 
@@ -91,19 +95,9 @@ exports.validateJobQuery = (req, res, next) => {
 };
 
 exports.validateJobCreate = (req, res, next) => {
-  console.log('Job creation input:', req.body);
-
   const schema = Joi.object({
-    title: Joi.string().min(5).max(100).required()
-      .messages({
-        'string.empty': 'Title is required',
-        'string.min': 'Title must be at least {#limit} characters'
-      }),
-    description: Joi.string().min(20).required()
-      .messages({
-        'string.empty': 'Description is required',
-        'string.min': 'Description must be at least {#limit} characters'
-      }),
+    title: Joi.string().min(5).max(100).required(),
+    description: Joi.string().min(20).required(),
     company: Joi.string().min(2).max(50).required(),
     location: Joi.string().required(),
     salary: Joi.number().min(0),
@@ -115,10 +109,7 @@ exports.validateJobCreate = (req, res, next) => {
 
   const { error, value } = schema.validate(req.body, { abortEarly: false });
 
-  if (error) {
-    console.log('Job validation errors:', error.details);
-    return validationErrorResponse(res, error);
-  }
+  if (error) return validationErrorResponse(res, error);
   
   req.body = value;
   next();
