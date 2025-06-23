@@ -1,101 +1,90 @@
 const express = require('express');
 const router = express.Router();
-const { Op } = require('sequelize');
-const { protect } = require('../middleware/auth');
-const { validateJobQuery, validateJobCreate } = require('../middleware/validation');
-const { Job, User } = require('../models');
+const { Job } = require('../models');
+const { protect, authorize } = require('../middleware/auth');
+const { validateJobCreate, validateJobQuery } = require('../middleware/validation');
 
-// Get all jobs with filtering, pagination, and sorting
-router.get('/', 
-  validateJobQuery,
-  async (req, res) => {
-    try {
-      const { 
-        jobType, 
-        location, 
-        minSalary, 
-        maxSalary,
-        search,
-        page = 1, 
-        limit = 10,
-        sortBy = 'createdAt',
-        sortOrder = 'DESC'
-      } = req.query;
+// @desc    Get all jobs (public)
+// @route   GET /api/jobs
+// @access  Public
+router.get('/', validateJobQuery, async (req, res) => {
+  try {
+    const { page = 1, limit = 10, ...query } = req.query;
+    
+    const jobs = await Job.findAndCountAll({
+      where: query,
+      limit: parseInt(limit),
+      offset: (page - 1) * limit,
+      include: [{
+        association: 'employer',
+        attributes: ['id', 'name', 'email']
+      }]
+    });
 
-      // Build filter object
-      const where = {};
-      if (jobType) where.jobType = jobType;
-      if (location) where.location = { [Op.iLike]: `%${location}%` };
-      if (minSalary || maxSalary) {
-        where.salary = {};
-        if (minSalary) where.salary[Op.gte] = parseInt(minSalary);
-        if (maxSalary) where.salary[Op.lte] = parseInt(maxSalary);
-      }
-      if (search) {
-        where[Op.or] = [
-          { title: { [Op.iLike]: `%${search}%` } },
-          { description: { [Op.iLike]: `%${search}%` } },
-          { company: { [Op.iLike]: `%${search}%` } }
-        ];
-      }
+    res.json({
+      success: true,
+      count: jobs.count,
+      totalPages: Math.ceil(jobs.count / limit),
+      currentPage: parseInt(page),
+      data: jobs.rows
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error fetching jobs'
+    });
+  }
+});
 
-      const jobs = await Job.findAndCountAll({
-        where,
-        include: [{
-          model: User,
-          as: 'employer',
-          attributes: ['id', 'name', 'email']
-        }],
-        order: [[sortBy, sortOrder]],
-        limit: parseInt(limit),
-        offset: (page - 1) * limit,
-        distinct: true
-      });
+// @desc    Get single job (public)
+// @route   GET /api/jobs/:id
+// @access  Public
+router.get('/:id', async (req, res) => {
+  try {
+    const job = await Job.findByPk(req.params.id, {
+      include: [{
+        association: 'employer',
+        attributes: ['id', 'name', 'email']
+      }]
+    });
 
-      res.json({
-        success: true,
-        count: jobs.count,
-        totalPages: Math.ceil(jobs.count / limit),
-        currentPage: parseInt(page),
-        data: jobs.rows
-      });
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-      res.status(500).json({ 
+    if (!job) {
+      return res.status(404).json({
         success: false,
-        error: 'Failed to fetch jobs',
-        ...(process.env.NODE_ENV === 'development' && { 
-          details: error.message 
-        })
+        error: 'Job not found'
       });
     }
-  }
-);
 
-// Create a new job
-router.post('/', 
+    res.json({
+      success: true,
+      data: job
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error fetching job'
+    });
+  }
+});
+
+// @desc    Create job (employer only)
+// @route   POST /api/jobs
+// @access  Private/Employer
+router.post(
+  '/',
   protect,
+  authorize('employer', 'admin'),
   validateJobCreate,
   async (req, res) => {
     try {
-      // Verify employer role
-      if (req.user.role !== 'employer' && req.user.role !== 'admin') {
-        return res.status(403).json({ 
-          success: false,
-          error: 'Only employers can post jobs' 
-        });
-      }
-
       const job = await Job.create({
         ...req.body,
         employer_id: req.user.id
       });
 
-      // Fetch job with employer details
       const jobWithEmployer = await Job.findByPk(job.id, {
         include: [{
-          model: User,
-          as: 'employer',
+          association: 'employer',
           attributes: ['id', 'name', 'email']
         }]
       });
@@ -104,14 +93,94 @@ router.post('/',
         success: true,
         data: jobWithEmployer
       });
-    } catch (error) {
-      console.error('Job creation error:', error);
-      res.status(400).json({ 
+    } catch (err) {
+      res.status(400).json({
         success: false,
-        error: 'Invalid job data',
-        ...(process.env.NODE_ENV === 'development' && { 
-          details: error.errors?.map(e => e.message) 
-        })
+        error: 'Invalid job data'
+      });
+    }
+  }
+);
+
+// @desc    Update job (owner only)
+// @route   PUT /api/jobs/:id
+// @access  Private/Employer
+router.put(
+  '/:id',
+  protect,
+  authorize('employer', 'admin'),
+  validateJobCreate,
+  async (req, res) => {
+    try {
+      const job = await Job.findOne({
+        where: {
+          id: req.params.id,
+          employer_id: req.user.id
+        }
+      });
+
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          error: 'Job not found or not authorized'
+        });
+      }
+
+      await job.update(req.body);
+      
+      const updatedJob = await Job.findByPk(job.id, {
+        include: [{
+          association: 'employer',
+          attributes: ['id', 'name', 'email']
+        }]
+      });
+
+      res.json({
+        success: true,
+        data: updatedJob
+      });
+    } catch (err) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid job data'
+      });
+    }
+  }
+);
+
+// @desc    Delete job (owner only)
+// @route   DELETE /api/jobs/:id
+// @access  Private/Employer
+router.delete(
+  '/:id',
+  protect,
+  authorize('employer', 'admin'),
+  async (req, res) => {
+    try {
+      const job = await Job.findOne({
+        where: {
+          id: req.params.id,
+          employer_id: req.user.id
+        }
+      });
+
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          error: 'Job not found or not authorized'
+        });
+      }
+
+      await job.destroy();
+      
+      res.json({
+        success: true,
+        data: {}
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        error: 'Server error deleting job'
       });
     }
   }

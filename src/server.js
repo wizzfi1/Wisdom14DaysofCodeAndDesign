@@ -18,6 +18,10 @@ app.get('/api/always-works', (req, res) => {
   res.json({ message: `Server is working on port ${PORT}` });
 });
 
+app.get('/', (req, res) => {
+  res.send('🌍 Welcome to the Wisdom Job Board API!');
+});
+
 // Auth routes
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes); // Now handles /api/auth/login
