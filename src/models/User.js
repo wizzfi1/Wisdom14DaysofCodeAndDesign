@@ -31,13 +31,16 @@ User.init({
       len: [8, 100]
     }
   },
-  role: {
-    type: DataTypes.ENUM('user', 'admin'),
-    defaultValue: 'user'
-  }
+ role: {
+  type: DataTypes.ENUM('user', 'employer', 'admin'),
+  defaultValue: 'user',
+  allowNull: false
+}
+
 }, {
   sequelize,
   modelName: 'user',
+  tableName: 'users',
   timestamps: true,
   hooks: {
     beforeSave: async (user) => {

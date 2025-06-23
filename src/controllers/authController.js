@@ -16,14 +16,12 @@ exports.registerUser = async (req, res) => {
       });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+    
     // Create user
     const user = await User.create({
       name,
       email,
-      password: hashedPassword,
+      password,
       role
     });
 
@@ -58,21 +56,23 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('📥 Email:', email);
+    console.log('📥 Password (raw):', password);
 
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+      console.log('❌ No user found');
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
+    console.log('🔐 Hashed password in DB:', user.password);
+
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('🔍 Password match result:', isMatch);
+
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+      console.log('❌ Password mismatch');
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
     const token = jwt.sign(
@@ -99,6 +99,7 @@ exports.loginUser = async (req, res) => {
     });
   }
 };
+
 
 // Get current user profile
 exports.getMe = async (req, res) => {

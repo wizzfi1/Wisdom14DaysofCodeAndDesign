@@ -43,3 +43,7 @@ app.listen(PORT, () => {
   console.log(`POST http://localhost:${PORT}/api/auth/login`);
   console.log(`GET  http://localhost:${PORT}/api/jobs`);
 });
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+});

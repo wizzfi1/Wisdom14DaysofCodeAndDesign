@@ -68,17 +68,35 @@ exports.getAllJobs = async (req, res) => {
 // POST /api/jobs - Create new job
 exports.createJob = async (req, res) => {
   try {
-    const jobData = {
+    // First verify the employer exists
+    const employer = await User.findByPk(req.user.id);
+    if (!employer) {
+      return res.status(404).json({
+        success: false,
+        error: 'Employer not found'
+      });
+    }
+
+    // Check if user has employer role
+    if (employer.role !== 'employer' && employer.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Only employers can create jobs'
+      });
+    }
+
+    // Create the job
+    const job = await Job.create({
       ...req.body,
       employer_id: req.user.id,
       status: 'active'
-    };
+    });
 
-    const job = await Job.create(jobData);
-
+    // Return job with employer details
     const jobWithEmployer = await Job.findByPk(job.id, {
       include: [{
-        association: 'employer',
+        model: User,
+        as: 'employer',
         attributes: ['id', 'name', 'email']
       }]
     });
@@ -87,14 +105,23 @@ exports.createJob = async (req, res) => {
       success: true,
       data: jobWithEmployer
     });
-  } catch (err) {
-    console.error('❌ Job Create Error:', err);
+
+  } catch (error) {
+    console.error('❌ Job Create Error:', error);
     
-    if (err.name === 'SequelizeValidationError') {
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid employer reference',
+        details: 'The specified employer does not exist'
+      });
+    }
+
+    if (error.name === 'SequelizeValidationError') {
       return res.status(400).json({
         success: false,
         error: 'Validation Error',
-        details: err.errors.map(e => e.message)
+        details: error.errors.map(e => e.message)
       });
     }
 
@@ -104,7 +131,6 @@ exports.createJob = async (req, res) => {
     });
   }
 };
-
 // PUT /api/jobs/:id - Update job
 exports.updateJob = async (req, res) => {
   try {
