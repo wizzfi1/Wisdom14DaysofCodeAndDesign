@@ -1,139 +1,157 @@
-# Job Board API
+# 💼 Wisdom Job Board API
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Sequelize](https://img.shields.io/badge/Sequelize-ORM-2F4068?logo=sequelize&logoColor=white)](https://sequelize.org/)
 
-A secure job board API with role-based authentication and CRUD operations for job postings, built with Node.js and PostgreSQL.
+A secure and extensible Job Board API with role-based access, resume uploads, and application tracking, built with **Node.js**, **PostgreSQL**, **Express**, and **Sequelize**.
 
-## Features
+---
 
-🔐 **Authentication**
-- JWT-based user registration/login
-- Role-based access control (employer/applicant)
+## 🚀 Features
 
-💼 **Job Management**
-- Create/edit/delete jobs (employers only)
-- Browse all jobs (public)
-- View job details (public)
+### 🔐 Authentication
+- JWT-based signup/login
+- Role-based access: `applicant`, `employer`, `admin`
+- Secure password hashing (bcrypt)
 
-🗃️ **Database**
-- PostgreSQL relational database
-- Secure password hashing
-- Data validation
+### 💼 Job Management
+- Employers can `create`, `edit`, and `delete` jobs
+- Public job listings and details
+- Association with employers
 
-## Quick Start
+### 📄 Applications & File Upload
+- Applicants can apply to jobs via `/api/apply/:jobId`
+- Upload **resume** (required) and **cover letter** (optional)
+- Files are validated (`PDF` / `DOC` / `DOCX` only)
+- Resume paths stored, along with submission metadata
+- Prevents duplicate applications (optional logic)
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 15+
-- npm 9+
+---
 
-### Installation
-```bash
-# Clone repository
+## 🗃️ Database Schema
+
+### Users
+```sql
+CREATE TYPE enum_users_role AS ENUM ('user', 'employer', 'admin');
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100),
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role enum_users_role DEFAULT 'user'
+);
+
+Jobs
+
+CREATE TABLE jobs (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(100) NOT NULL,
+  description TEXT NOT NULL,
+  salary INTEGER,
+  company VARCHAR(100),
+  location VARCHAR(50),
+  jobType VARCHAR(50),
+  requirements TEXT,
+  status VARCHAR(20) DEFAULT 'active',
+  employer_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+);
+
+Applications
+
+CREATE TABLE applications (
+  id SERIAL PRIMARY KEY,
+  applicant_id INTEGER REFERENCES users(id),
+  job_id INTEGER REFERENCES jobs(id),
+  resume_path VARCHAR(255),
+  cover_letter_path VARCHAR(255),
+  submitted_at TIMESTAMP
+);
+
+
+🛠️ Installation
+
+
+# Clone the project
 git clone https://github.com/yourusername/job-board-api.git
 cd job-board-api
 
 # Install dependencies
 npm install
 
-# Set up environment variables
+# Setup environment
 cp .env.example .env
-# Edit .env with your credentials
+# 👉 Update DB credentials and JWT_SECRET
 
-# Start development server
+# Start dev server
 npm run dev
 
 
-API Documentation
+📬 API Endpoints
 
 Authentication
 
-Method	Endpoint	Description
+| Method | Endpoint             | Description         |
+| ------ | -------------------- | ------------------- |
+| POST   | `/api/auth/register` | Register user       |
+| POST   | `/api/auth/login`    | Login and get token |
 
-POST	/api/auth/register	Register new user
-POST	/api/auth/login	Login to get JWT token
 
 Jobs
 
-Method	Endpoint	Description	Access
-GET	/api/jobs	Get all jobs	Public
-GET	/api/jobs/:id	Get single job	Public
-POST	/api/jobs	Create new job	Employer only
-PUT	/api/jobs/:id	Update job	Owner only
-DELETE	/api/jobs/:id	Delete job	Owner only
+| Method | Endpoint        | Description     | Access         |
+| ------ | --------------- | --------------- | -------------- |
+| GET    | `/api/jobs`     | View all jobs   | Public         |
+| GET    | `/api/jobs/:id` | View single job | Public         |
+| POST   | `/api/jobs`     | Create new job  | Employer only  |
+| PUT    | `/api/jobs/:id` | Update job      | Job owner only |
+| DELETE | `/api/jobs/:id` | Delete job      | Job owner only |
 
+Applications
 
-Example Requests
+✅ Register (Applicant)
 
-Register User:
-
-curl -X POST http://localhost:3000/api/auth/register \
+curl -X POST http://localhost:3001/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "employer@example.com",
+    "name": "Jane Doe",
+    "email": "jane@example.com",
     "password": "secure123",
-    "role": "employer"
+    "role": "user"
   }'
 
-Create Job (Authenticated):
+✅ Apply to Job with Resume
 
-curl -X POST http://localhost:3000/api/jobs \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Senior Developer",
-    "description": "Node.js expert needed",
-    "salary": 90000,
-    "company": "Tech Corp",
-    "location": "remote"
-  }'
+curl -X POST http://localhost:3001/api/apply/1 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "resume=@./uploads/resumes/resume.docx" \
+  -F "coverLetter=@./uploads/coverLetters/letter.pdf"
 
-
-Database Schema
-
-Users Table:
-
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(100) NOT NULL,
-  role VARCHAR(20) NOT NULL CHECK (role IN ('employer', 'applicant'))
-);
-
-Jobs Table:
-
-CREATE TABLE jobs (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(100) NOT NULL,
-  description TEXT NOT NULL,
-  salary NUMERIC NOT NULL,
-  company VARCHAR(100) NOT NULL,
-  location VARCHAR(50) NOT NULL CHECK (location IN ('remote', 'onsite', 'hybrid')),
-  employer_id INTEGER REFERENCES users(id) ON DELETE CASCADE
-);
-
-Project Structure
+📁 Project Structure
 
 src/
-├── config/        # Database configuration
-├── controllers/   # Business logic
-├── middleware/    # Authentication
-├── models/        # Database models
-├── routes/        # API endpoints
-└── server.js      # Application entry point
+├── config/            # DB config
+├── controllers/       # Route handlers
+├── middleware/        # Auth / validation
+├── models/            # Sequelize models
+├── routes/            # API endpoints
+├── uploads/           # Resume + coverLetter storage
+└── server.js          # API entry point
 
-🔧 Troubleshooting
+🧰 Troubleshooting
 
-Common Issues:
+role enum conflict: Drop conflicting enums manually via psql
 
-Database connection:
+curl file error: Ensure correct path + filename
 
-psql -U your_db_user -d your_db_name -c "SELECT * FROM users;"
+POST /apply/:jobId fails? Ensure the job exists and applicant is authenticated
 
-JWT errors:
+🔒 Security Notes
 
-Verify token in jwt.io
+All sensitive routes are protected using JWT
 
-Check secret in .env
+Passwords are hashed before DB storage
+
+File uploads are filtered & size-limited
