@@ -1,18 +1,20 @@
 const express = require('express');
+const { protect, authorize } = require('../middleware/auth');
+const { getApplicationsForJob, getMyApplications } = require('../controllers/applicationController');
 const router = express.Router();
-const upload = require('../middleware/upload');
-const { protect } = require('../middleware/auth');
-const { applyToJob } = require('../controllers/applicationController');
 
-// Applicants only route
-router.post(
-  '/apply/:jobId',
+router.get(
+  '/jobs/:jobId/applications',
   protect,
-  upload.fields([
-    { name: 'resume', maxCount: 1 },
-    { name: 'coverLetter', maxCount: 1 }
-  ]),
-  applyToJob
+  authorize('employer'),
+  getApplicationsForJob
+);
+
+router.get(
+  '/my-applications',
+  protect,
+  authorize('applicant'),
+  getMyApplications
 );
 
 module.exports = router;

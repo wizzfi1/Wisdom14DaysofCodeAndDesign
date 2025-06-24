@@ -31,6 +31,9 @@ app.use('/api', applicationRoutes);
 const jobRoutes = require('./routes/jobRoutes');
 app.use('/api/jobs', jobRoutes);
 
+const appRoutes = require('./routes/applicationRoutes');
+app.use('/api', appRoutes);
+
 // ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error(err.stack);

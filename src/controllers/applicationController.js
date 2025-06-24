@@ -1,33 +1,33 @@
-const { Application } = require('../models');
+const { Application, Job, User } = require('../models');
 
-exports.applyToJob = async (req, res) => {
+// Employer: view applications for a specific job
+exports.getApplicationsForJob = async (req, res) => {
+  const { jobId } = req.params;
+  const employerId = req.user.id;
+
+  const job = await Job.findByPk(jobId);
+  if (!job || job.employer_id !== employerId) {
+    return res.status(403).json({ success: false, error: 'Not authorized or job not found' });
+  }
+
+  const applications = await Application.findAll({
+    where: { job_id: jobId },
+    include: [{ model: User, as: 'applicant', attributes: ['id', 'name', 'email'] }],
+    order: [['submitted_at', 'DESC']],
+  });
+
+  res.json({ success: true, count: applications.length, applications });
+};
+
+// Applicant: view their own applications
+exports.getMyApplications = async (req, res) => {
   const applicantId = req.user.id;
-  const jobId = req.params.jobId;
-  if (!req.files || !req.files.resume) {
-    return res.status(400).json({ success: false, error: 'Resume is required' });
-  }
 
-  try {
-    // Prevent duplicates
-    const existing = await Application.findOne({ where: { applicant_id: applicantId, job_id: jobId } });
-    if (existing) {
-      return res.status(400).json({ success: false, error: 'Already applied to this job' });
-    }
+  const applications = await Application.findAll({
+    where: { applicant_id: applicantId },
+    include: [{ model: Job, as: 'job' }],
+    order: [['submitted_at', 'DESC']],
+  });
 
-    // Save record
-    const resume = req.files.resume[0].path;
-    const coverLetter = req.files.coverLetter ? req.files.coverLetter[0].path : null;
-
-    const app = await Application.create({
-      applicant_id: applicantId,
-      job_id: jobId,
-      resume_path: resume,
-      cover_letter_path: coverLetter
-    });
-
-    res.status(201).json({ success: true, data: app });
-  } catch (err) {
-    console.error('❌ Application Error:', err);
-    res.status(500).json({ success: false, error: 'Failed to submit application' });
-  }
+  res.json({ success: true, count: applications.length, applications });
 };

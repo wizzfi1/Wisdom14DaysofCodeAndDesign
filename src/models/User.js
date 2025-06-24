@@ -32,9 +32,12 @@ User.init({
     }
   },
  role: {
-  type: DataTypes.ENUM('user', 'employer', 'admin'),
+  type: DataTypes.STRING,
+  allowNull: false,
   defaultValue: 'user',
-  allowNull: false
+  validate: {
+    isIn: [['user', 'employer', 'admin']]
+  }
 }
 
 }, {
