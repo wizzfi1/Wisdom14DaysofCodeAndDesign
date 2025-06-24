@@ -12,6 +12,6 @@ RUN npm install
 # Copy app source
 COPY . .
 
-EXPOSE 3000
+EXPOSE 3001
 
-CMD ["npm", "start"]
+CMD ["npm", "start"]docker build -t wisdom14daysofcode .

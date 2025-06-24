@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -6,14 +7,13 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ===== MIDDLEWARE (Must come first!) =====
-app.use(cors()); // Allow frontend connections
-app.use(morgan('dev')); // Log requests
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded data
+// MIDDLEWARE
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// ===== ROUTES =====
-// Test route
+// ROUTES
 app.get('/api/always-works', (req, res) => {
   res.json({ message: `Server is working on port ${PORT}` });
 });
@@ -22,28 +22,41 @@ app.get('/', (req, res) => {
   res.send('🌍 Welcome to the Wisdom Job Board API!');
 });
 
-// Auth routes
 const authRoutes = require('./routes/authRoutes');
-app.use('/api/auth', authRoutes); // Now handles /api/auth/login
+app.use('/api/auth', authRoutes);
 
-// Job routes
+const applicationRoutes = require('./routes/applicationRoutes');
+app.use('/api', applicationRoutes);
+
 const jobRoutes = require('./routes/jobRoutes');
-app.use('/api/jobs', jobRoutes); // Handles /api/jobs
+app.use('/api/jobs', jobRoutes);
 
-// ===== ERROR HANDLER =====
+// ERROR HANDLER
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something broke!' });
 });
 
-// ===== START SERVER =====
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log('Test endpoints:');
-  console.log(`POST http://localhost:${PORT}/api/auth/login`);
-  console.log(`GET  http://localhost:${PORT}/api/jobs`);
-});
+// DB SYNC + START SERVER
+const { sequelize } = require('./models');
 
-process.on('unhandledRejection', (err) => {
+sequelize.authenticate()
+  .then(() => {
+    console.log('✅ Database connected');
+    return sequelize.sync({ alter: true }); // Use { force: true } for full reset
+  })
+  .then(() => {
+    console.log('✅ Models synchronized');
+    app.listen(PORT, () => {
+      console.log(`🚀 Server listening on port ${PORT}`);
+      console.log(`POST http://localhost:${PORT}/api/auth/login`);
+      console.log(`GET  http://localhost:${PORT}/api/jobs`);
+    });
+  })
+  .catch(err => {
+    console.error('❌ Startup error:', err);
+  });
+
+process.on('unhandledRejection', err => {
   console.error('Unhandled Rejection:', err);
 });
