@@ -1,23 +1,15 @@
-image:
-  file: .gitpod.Dockerfile
-
 tasks:
   - name: Backend
     init: |
-      # Quietly check for PostgreSQL
-      while ! pg_isready -h localhost -p 5432 -U wizfi >/dev/null 2>&1; do sleep 1; done
-      
-      # Create database quietly
-      createdb -h localhost -U wizfi wisdom_api >/dev/null 2>&1 || true
-      
-      # Install dependencies
-      npm install --quiet
+      # Install PostgreSQL client
+      sudo apt-get update && sudo apt-get install -y postgresql-client
+      # Create database (if needed)
+      createdb -h localhost -U wizfi wisdom_api
+      npm install
     command: npm run start
 
 ports:
   - port: 3001
     onOpen: open-browser
-    description: Node.js Application
   - port: 5432
     onOpen: ignore
-    description: PostgreSQL Database
