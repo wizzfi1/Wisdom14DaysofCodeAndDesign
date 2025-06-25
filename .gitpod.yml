@@ -4,16 +4,14 @@ image:
 tasks:
   - name: Backend
     init: |
-      # Install PostgreSQL client if not in Dockerfile
-      sudo apt-get update && sudo apt-get install -y postgresql-client
+      # Quietly check for PostgreSQL
+      while ! pg_isready -h localhost -p 5432 -U wizfi >/dev/null 2>&1; do sleep 1; done
       
-      # Wait for PostgreSQL
-      while ! pg_isready -h localhost -p 5432 -U wizfi; do sleep 1; done
+      # Create database quietly
+      createdb -h localhost -U wizfi wisdom_api >/dev/null 2>&1 || true
       
-      # Create database
-      createdb -h localhost -U wizfi wisdom_api || true
-      
-      npm install
+      # Install dependencies
+      npm install --quiet
     command: npm run start
 
 ports:

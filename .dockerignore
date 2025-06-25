@@ -1,0 +1,4 @@
+.git
+.gitpod.yml
+node_modules
+*.md
