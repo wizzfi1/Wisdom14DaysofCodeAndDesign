@@ -3,12 +3,10 @@ module.exports = (sequelize, DataTypes) => {
     applicant_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: 'users', key: 'id' },
     },
     job_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: { model: 'jobs', key: 'id' },
     },
     resume_path: {
       type: DataTypes.STRING,
@@ -25,10 +23,10 @@ module.exports = (sequelize, DataTypes) => {
     status: {
       type: DataTypes.ENUM('pending', 'shortlisted', 'rejected'),
       defaultValue: 'pending',
-    },
+    }
   }, {
-    timestamps: false,
     tableName: 'applications',
+    timestamps: false
   });
 
   Application.associate = (models) => {

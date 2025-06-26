@@ -1,26 +1,23 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-// Register Job model via factory
 const Job = require('./Job')(sequelize, DataTypes);
-
-// Register User model (already initialized via class)
-const User = require('./User'); // ✅ do not call it like a function
-
+const User = require('./User');
 const Application = require('./Application')(sequelize, DataTypes);
 
+const models = { Job, User, Application };
 
-
-
-// Setup associations
-const models = { Job, User };
-
-Object.values(models).forEach((model) => {
-  if (model.associate) {
-    model.associate(models);
-    models.Application = Application;
-  }
+Object.values(models).forEach(model => {
+  if (model.associate) model.associate(models);
 });
+
+sequelize.authenticate()
+  .then(() => console.log('✅ Database connected'))
+  .catch(err => console.error('❌ DB Error:', err));
+
+sequelize.sync({ alter: true })
+  .then(() => console.log('✅ Models synchronized'))
+  .catch(err => console.error('❌ Sync error:', err));
 
 module.exports = {
   ...models,

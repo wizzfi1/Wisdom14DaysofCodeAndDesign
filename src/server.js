@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -22,17 +21,10 @@ app.get('/', (req, res) => {
   res.send('🌍 Welcome to the Wisdom Job Board API!');
 });
 
-const authRoutes = require('./routes/authRoutes');
-app.use('/api/auth', authRoutes);
-
-const applicationRoutes = require('./routes/applicationRoutes');
-app.use('/api', applicationRoutes);
-
-const jobRoutes = require('./routes/jobRoutes');
-app.use('/api/jobs', jobRoutes);
-
-const appRoutes = require('./routes/applicationRoutes');
-app.use('/api', appRoutes);
+// Route handlers
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/jobs', require('./routes/jobRoutes'));
+app.use('/api', require('./routes/applicationRoutes'));
 
 // ERROR HANDLER
 app.use((err, req, res, next) => {
@@ -43,23 +35,45 @@ app.use((err, req, res, next) => {
 // DB SYNC + START SERVER
 const { sequelize } = require('./models');
 
-sequelize.authenticate()
-  .then(() => {
-    console.log('✅ Database connected');
-    return sequelize.sync({ alter: true }); // Use { force: true } for full reset
-  })
-  .then(() => {
+async function startServer() {
+  try {
+    // 1. Authenticate database connection
+    await sequelize.authenticate();
+    console.log('✅ Database connection established');
+
+    // 2. Sync models with safe options
+    await sequelize.sync({
+      force: false,    // Don't drop tables
+      alter: false     // Don't alter tables automatically
+      // match: /_test$/ // Optional: Only sync tables ending with _test in test env
+    });
     console.log('✅ Models synchronized');
+
+    // 3. Start server
     app.listen(PORT, () => {
       console.log(`🚀 Server listening on port ${PORT}`);
       console.log(`POST http://localhost:${PORT}/api/auth/login`);
       console.log(`GET  http://localhost:${PORT}/api/jobs`);
+      console.log(`GET  http://localhost:${PORT}/api/always-works (health check)`);
     });
-  })
-  .catch(err => {
-    console.error('❌ Startup error:', err);
-  });
 
+  } catch (err) {
+    console.error('❌ Startup error:', err);
+    process.exit(1); // Exit with failure
+  }
+}
+
+// Start the server
+startServer();
+
+// Handle unhandled rejections
 process.on('unhandledRejection', err => {
   console.error('Unhandled Rejection:', err);
+  process.exit(1);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', err => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
 });

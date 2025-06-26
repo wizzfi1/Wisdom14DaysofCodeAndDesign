@@ -1,6 +1,35 @@
 const { Application, Job, User } = require('../models');
 
-// Employer: view applications for a specific job
+exports.applyToJob = async (req, res) => {
+  try {
+    const applicant_id = req.user.id;
+    const job_id = parseInt(req.params.jobId, 10);
+
+    const job = await Job.findByPk(job_id);
+    if (!job) return res.status(404).json({ success: false, error: 'Job not found' });
+
+    const existing = await Application.findOne({ where: { job_id, applicant_id } });
+    if (existing) return res.status(400).json({ success: false, error: 'You already applied to this job' });
+
+    const resume = req.files.resume?.[0]?.path;
+    const cover = req.files.coverLetter?.[0]?.path || null;
+
+    if (!resume) return res.status(400).json({ success: false, error: 'Resume is required' });
+
+    const app = await Application.create({
+      applicant_id,
+      job_id,
+      resume_path: resume,
+      cover_letter_path: cover
+    });
+
+    res.status(201).json({ success: true, application: app });
+  } catch (err) {
+    console.error('❌ Application Error:', err);
+    res.status(500).json({ success: false, error: 'Failed to apply' });
+  }
+};
+
 exports.getApplicationsForJob = async (req, res) => {
   const { jobId } = req.params;
   const employerId = req.user.id;
@@ -19,7 +48,6 @@ exports.getApplicationsForJob = async (req, res) => {
   res.json({ success: true, count: applications.length, applications });
 };
 
-// Applicant: view their own applications
 exports.getMyApplications = async (req, res) => {
   const applicantId = req.user.id;
 

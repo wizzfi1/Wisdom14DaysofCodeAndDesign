@@ -14,6 +14,10 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes); // All auth routes start with /api/auth
 
+const applicationRoutes = require('./routes/applicationRoutes');
+app.use('/api', applicationRoutes);
+
+
 // Middleware
 app.use(cors()); // Allow frontend to connect
 app.use(express.json()); // Parse JSON requests

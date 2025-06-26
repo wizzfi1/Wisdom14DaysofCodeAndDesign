@@ -1,7 +1,24 @@
 const express = require('express');
-const { protect, authorize } = require('../middleware/auth');
-const { getApplicationsForJob, getMyApplications } = require('../controllers/applicationController');
 const router = express.Router();
+const { protect, authorize } = require('../middleware/auth');
+const upload = require('../middleware/upload');
+
+const {
+  applyToJob,
+  getApplicationsForJob,
+  getMyApplications
+} = require('../controllers/applicationController');
+
+router.post(
+  '/apply/:jobId',
+  protect,
+  authorize('applicant'),
+  upload.fields([
+    { name: 'resume', maxCount: 1 },
+    { name: 'coverLetter', maxCount: 1 }
+  ]),
+  applyToJob
+);
 
 router.get(
   '/jobs/:jobId/applications',

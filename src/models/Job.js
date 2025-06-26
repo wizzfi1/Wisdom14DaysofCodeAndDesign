@@ -34,16 +34,16 @@ module.exports = (sequelize, DataTypes) => {
     },
     jobType: {
       type: DataTypes.ENUM(
-        'full-time', 
-        'part-time', 
-        'contract', 
-        'freelance', 
+        'full-time',
+        'part-time',
+        'contract',
+        'freelance',
         'internship'
       ),
       allowNull: false
     },
     requirements: {
-      type: DataTypes.TEXT, // Changed from ARRAY to TEXT
+      type: DataTypes.TEXT,
       allowNull: false,
       get() {
         const rawValue = this.getDataValue('requirements');
@@ -67,7 +67,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     timestamps: true,
-    paranoid: true
+    paranoid: true,
+    tableName: 'jobs' // 👈 Add this line to match DB table
   });
 
   Job.associate = (models) => {
