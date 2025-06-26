@@ -11,147 +11,142 @@ A secure and extensible Job Board API with role-based access, resume uploads, an
 
 ## 🚀 Features
 
-### 🔐 Authentication
-- JWT-based signup/login
-- Role-based access: `applicant`, `employer`, `admin`
-- Secure password hashing (bcrypt)
+### 🔐 Authentication & Roles
+- JWT-based registration & login  
+- Roles: `applicant`, `employer`, `admin`  
+- Role-based access control  
 
 ### 💼 Job Management
-- Employers can `create`, `edit`, and `delete` jobs
-- Public job listings and details
-- Association with employers
+- **Employers** can:
+  - Create, update, delete job postings  
+  - View applicants for their jobs  
+- **Public** users can:
+  - Browse all jobs  
+  - View job details  
 
-### 📄 Applications & File Upload
-- Applicants can apply to jobs via `/api/apply/:jobId`
-- Upload **resume** (required) and **cover letter** (optional)
-- Files are validated (`PDF` / `DOC` / `DOCX` only)
-- Resume paths stored, along with submission metadata
-- Prevents duplicate applications (optional logic)
+### 📄 Resume Upload & Applications
+- **Applicants** can:
+  - Apply to jobs with a **required resume** and optional cover letter  
+  - View their submitted applications with statuses  
+- **Employers** can:
+  - View all applicants for their jobs with resume metadata  
+
+### 📊 Application Tracking System (ATS)
+- Applications have `status`: `pending`, `shortlisted`, `rejected`  
+- Applicants can track their application statuses  
+- Employers can filter by applicant status  
 
 ---
 
-## 🗃️ Database Schema
+## 📁 Project Structure
 
-### Users
-```sql
-CREATE TYPE enum_users_role AS ENUM ('user', 'employer', 'admin');
-
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100),
-  email VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  role enum_users_role DEFAULT 'user'
-);
-
-Jobs
-
-CREATE TABLE jobs (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(100) NOT NULL,
-  description TEXT NOT NULL,
-  salary INTEGER,
-  company VARCHAR(100),
-  location VARCHAR(50),
-  jobType VARCHAR(50),
-  requirements TEXT,
-  status VARCHAR(20) DEFAULT 'active',
-  employer_id INTEGER REFERENCES users(id) ON DELETE CASCADE
-);
-
-Applications
-
-CREATE TABLE applications (
-  id SERIAL PRIMARY KEY,
-  applicant_id INTEGER REFERENCES users(id),
-  job_id INTEGER REFERENCES jobs(id),
-  resume_path VARCHAR(255),
-  cover_letter_path VARCHAR(255),
-  submitted_at TIMESTAMP
-);
+```text
+src/
+├── config/          # DB setup (Sequelize + PostgreSQL)
+├── controllers/     # Auth, job, application logic
+├── middleware/      # Authentication & authorization
+├── models/          # Sequelize models (User, Job, Application)
+├── routes/          # API endpoints
+├── uploads/         # Stored resumes & cover letters
+└── server.js        # Application entrypoint
 
 
-🛠️ Installation
 
+---
 
-# Clone the project
-git clone https://github.com/yourusername/job-board-api.git
-cd job-board-api
+## ⚙️ Setup & Run
 
+```bash
 # Install dependencies
 npm install
 
-# Setup environment
+# Create .env from template
 cp .env.example .env
-# 👉 Update DB credentials and JWT_SECRET
+# Edit .env with your DB credentials, JWT_SECRET, etc.
+
+# Run migrations
+npx sequelize-cli db:migrate
 
 # Start dev server
 npm run dev
 
+📌 API Overview
 
-📬 API Endpoints
+### Auth Routes
 
-Authentication
-
-| Method | Endpoint             | Description         |
-| ------ | -------------------- | ------------------- |
-| POST   | `/api/auth/register` | Register user       |
-| POST   | `/api/auth/login`    | Login and get token |
+| Method | Endpoint             | Access | Description         |
+| ------ | -------------------- | ------ | ------------------- |
+| POST   | `/api/auth/register` | Public | Register a new user |
+| POST   | `/api/auth/login`    | Public | Login & receive JWT |
 
 
-Jobs
+Job Routes
 
-| Method | Endpoint        | Description     | Access         |
-| ------ | --------------- | --------------- | -------------- |
-| GET    | `/api/jobs`     | View all jobs   | Public         |
-| GET    | `/api/jobs/:id` | View single job | Public         |
-| POST   | `/api/jobs`     | Create new job  | Employer only  |
-| PUT    | `/api/jobs/:id` | Update job      | Job owner only |
-| DELETE | `/api/jobs/:id` | Delete job      | Job owner only |
+| Method | Endpoint        | Access   | Description          |
+| ------ | --------------- | -------- | -------------------- |
+| GET    | `/api/jobs`     | Public   | List all jobs        |
+| GET    | `/api/jobs/:id` | Public   | View a single job    |
+| POST   | `/api/jobs`     | Employer | Create a job posting |
+| PUT    | `/api/jobs/:id` | Employer | Update a job         |
+| DELETE | `/api/jobs/:id` | Employer | Delete a job         |
 
-Applications
+Application Routes
 
-✅ Register (Applicant)
+| Method | Endpoint                        | Access    | Description                            |
+| ------ | ------------------------------- | --------- | -------------------------------------- |
+| POST   | `/api/apply/:jobId`             | Applicant | Apply to a job with file upload        |
+| GET    | `/api/my-applications`          | Applicant | View submitted applications & statuses |
+| GET    | `/api/jobs/:jobId/applications` | Employer  | View applicants for a job              |
+
+
+📦 File Uploads with Multer
+
+Supported file types: .pdf, .doc, .docx
+
+Size limit: 5 MB
+
+Stored under:
+
+-uploads/resumes/
+
+-uploads/coverLetters/
+
+📄 Sample Usage (using cURL)
+
+🔐 Register User
 
 curl -X POST http://localhost:3001/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Jane Doe",
-    "email": "jane@example.com",
-    "password": "secure123",
-    "role": "user"
-  }'
+  -d '{"name":"Wisdom","email":"user@example.com","password":"Wisdomwise1!","role":"applicant"}'
 
-✅ Apply to Job with Resume
+📄 Apply to a Job
 
 curl -X POST http://localhost:3001/api/apply/1 \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "resume=@./uploads/resumes/resume.docx" \
-  -F "coverLetter=@./uploads/coverLetters/letter.pdf"
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "resume=@./uploads/resumes/sample_resume.pdf" \
+  -F "coverLetter=@./uploads/coverLetters/sample_cover.docx"
 
-📁 Project Structure
+🧪 Testing Tips
 
-src/
-├── config/            # DB config
-├── controllers/       # Route handlers
-├── middleware/        # Auth / validation
-├── models/            # Sequelize models
-├── routes/            # API endpoints
-├── uploads/           # Resume + coverLetter storage
-└── server.js          # API entry point
+-Use Postman, Insomnia, or curl to test endpoints
 
-🧰 Troubleshooting
+-Decode JWTs with jwt.io
 
-role enum conflict: Drop conflicting enums manually via psql
+-Test role-based flows using applicant and employer accounts
 
-curl file error: Ensure correct path + filename
+🧠 Skills Demonstrated
 
-POST /apply/:jobId fails? Ensure the job exists and applicant is authenticated
+-REST API implementation
 
-🔒 Security Notes
+-JWT authentication and middleware
 
-All sensitive routes are protected using JWT
+-Role-based authorization
 
-Passwords are hashed before DB storage
+-File uploads using Multer
 
-File uploads are filtered & size-limited
+-Sequelize ORM with migrations
+
+-PostgreSQL schema design
+
+-Basic ATS workflows (pending, shortlisted, rejected)
+
